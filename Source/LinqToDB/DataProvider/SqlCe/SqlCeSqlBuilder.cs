@@ -17,7 +17,8 @@ namespace LinqToDB.DataProvider.SqlCe
 
 		protected override string FirstFormat(SelectQuery selectQuery)
 		{
-			return selectQuery.Select.SkipValue == null ? "TOP ({0})" : null;
+			return null;
+			//return selectQuery.Select.SkipValue == null ? "TOP ({0})" : null;
 		}
 
 		protected override string LimitFormat(SelectQuery selectQuery)

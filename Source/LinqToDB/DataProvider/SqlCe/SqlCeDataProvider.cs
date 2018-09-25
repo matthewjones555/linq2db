@@ -107,6 +107,9 @@ namespace LinqToDB.DataProvider.SqlCe
 
 		public override void SetParameter(IDbDataParameter parameter, string name, DataType dataType, object value)
 		{
+			// sql CE 3.0 requires @ in front of parameter names
+			name = "@" + name;
+
 			switch (dataType)
 			{
 				case DataType.Xml :
