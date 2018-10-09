@@ -1292,14 +1292,19 @@ namespace LinqToDB.Linq.Builder
 
 		ParameterAccessor BuildParameter(Expression expr, BuildParameterType buildParameterType = BuildParameterType.Default)
 		{
-			if (_parameters.TryGetValue(expr, out var p))
+			// disallow parameter re-use in SqlCe
+			bool isSqlCe = MappingSchema.ConfigurationID == "SqlCe";
+
+			ParameterAccessor p = null;
+
+			if (!isSqlCe && _parameters.TryGetValue(expr, out p))
 				return p;
 
 			string name = null;
 
 			var newExpr = ReplaceParameter(_expressionAccessors, expr, nm => name = nm);
 
-			if (!DataContext.SqlProviderFlags.IsParameterOrderDependent)
+			if (!isSqlCe && !DataContext.SqlProviderFlags.IsParameterOrderDependent)
 				foreach (var accessor in _parameters)
 					if (accessor.Key.EqualsTo(expr, new Dictionary<Expression, QueryableAccessor>(), compareConstantValues: true))
 						p = accessor.Value;
