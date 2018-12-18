@@ -1,0 +1,17 @@
+next-version: 2.5.1
+mode: ContinuousDeployment 
+branches:
+  develop:
+    regex: dev(elop)?(ment)?$
+    increment: Patch
+    tag: beta
+  feature:
+    regex: features?[/-]
+    increment: Patch
+    tag: alpha-{BranchName}
+  master:
+    tag: rc
+    increment: Patch
+ignore:
+  sha: [06aa83e7]
+  commits-before: '2018-12-17T00:00:00'
