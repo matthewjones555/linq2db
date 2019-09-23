@@ -10,6 +10,7 @@ using LinqToDB.Extensions;
 namespace LinqToDB.DataProvider.SqlCe
 {
 	using Data;
+	using Common;
 	using Mapping;
 	using SchemaProvider;
 	using SqlProvider;
@@ -31,6 +32,7 @@ namespace LinqToDB.DataProvider.SqlCe
 			SqlProviderFlags.IsCrossJoinSupported                 = true;
 			SqlProviderFlags.IsDistinctOrderBySupported           = false;
 			SqlProviderFlags.IsOrderByAggregateFunctionsSupported = false;
+			SqlProviderFlags.IsDistinctSetOperationsSupported     = false;
 
 			SetCharFieldToType<char>("NChar", (r, i) => DataTools.GetChar(r, i));
 
@@ -42,6 +44,10 @@ namespace LinqToDB.DataProvider.SqlCe
 		public    override string ConnectionNamespace => "System.Data.SqlServerCe";
 		protected override string ConnectionTypeName  => $"{ConnectionNamespace}.SqlCeConnection, {ConnectionNamespace}";
 		protected override string DataReaderTypeName  => $"{ConnectionNamespace}.SqlCeDataReader, {ConnectionNamespace}";
+
+#if !NETSTANDARD1_6 && !NETSTANDARD2_0
+		public override string DbFactoryProviderName => "System.Data.SqlServerCe.4.0";
+#endif
 
 		protected override void OnConnectionTypeCreated(Type connectionType)
 		{
@@ -57,16 +63,16 @@ namespace LinqToDB.DataProvider.SqlCe
 			_setBoolean   = GetSetParameter(connectionType, SqlDbType.Bit);
 		}
 
-		static Action<IDbDataParameter> _setNText;
-		static Action<IDbDataParameter> _setNChar;
-		static Action<IDbDataParameter> _setNVarChar;
-		static Action<IDbDataParameter> _setTimestamp;
-		static Action<IDbDataParameter> _setBinary;
-		static Action<IDbDataParameter> _setVarBinary;
-		static Action<IDbDataParameter> _setImage;
-		static Action<IDbDataParameter> _setDateTime;
-		static Action<IDbDataParameter> _setMoney;
-		static Action<IDbDataParameter> _setBoolean;
+		Action<IDbDataParameter> _setNText;
+		Action<IDbDataParameter> _setNChar;
+		Action<IDbDataParameter> _setNVarChar;
+		Action<IDbDataParameter> _setTimestamp;
+		Action<IDbDataParameter> _setBinary;
+		Action<IDbDataParameter> _setVarBinary;
+		Action<IDbDataParameter> _setImage;
+		Action<IDbDataParameter> _setDateTime;
+		Action<IDbDataParameter> _setMoney;
+		Action<IDbDataParameter> _setBoolean;
 
 		static Action<IDbDataParameter> GetSetParameter(Type connectionType, SqlDbType value)
 		{
@@ -86,9 +92,9 @@ namespace LinqToDB.DataProvider.SqlCe
 
 		#region Overrides
 
-		public override ISqlBuilder CreateSqlBuilder()
+		public override ISqlBuilder CreateSqlBuilder(MappingSchema mappingSchema)
 		{
-			return new SqlCeSqlBuilder(GetSqlOptimizer(), SqlProviderFlags, MappingSchema.ValueToSqlConverter);
+			return new SqlCeSqlBuilder(GetSqlOptimizer(), SqlProviderFlags, mappingSchema.ValueToSqlConverter);
 		}
 
 		readonly ISqlOptimizer _sqlOptimizer;
@@ -105,15 +111,15 @@ namespace LinqToDB.DataProvider.SqlCe
 		}
 #endif
 
-		public override void SetParameter(IDbDataParameter parameter, string name, DataType dataType, object value)
+		public override void SetParameter(IDbDataParameter parameter, string name, DbDataType dataType, object value)
 		{
 			// sql CE 3.0 requires @ in front of parameter names
 			name = "@" + name;
 
-			switch (dataType)
+			switch (dataType.DataType)
 			{
 				case DataType.Xml :
-					dataType = DataType.NVarChar;
+					dataType = dataType.WithDataType(DataType.NVarChar);
 
 					if (value is SqlXml)
 					{
@@ -129,9 +135,9 @@ namespace LinqToDB.DataProvider.SqlCe
 			base.SetParameter(parameter, name, dataType, value);
 		}
 
-		protected override void SetParameterType(IDbDataParameter parameter, DataType dataType)
+		protected override void SetParameterType(IDbDataParameter parameter, DbDataType dataType)
 		{
-			switch (dataType)
+			switch (dataType.DataType)
 			{
 				case DataType.SByte      : parameter.DbType    = DbType.Int16;   break;
 				case DataType.UInt16     : parameter.DbType    = DbType.Int32;   break;
@@ -195,11 +201,11 @@ namespace LinqToDB.DataProvider.SqlCe
 		#region BulkCopy
 
 		public override BulkCopyRowsCopied BulkCopy<T>(
-			[JetBrains.Annotations.NotNull] DataConnection dataConnection, BulkCopyOptions options, IEnumerable<T> source)
+			[JetBrains.Annotations.NotNull] ITable<T> table, BulkCopyOptions options, IEnumerable<T> source)
 		{
 			return new SqlCeBulkCopy().BulkCopy(
 				options.BulkCopyType == BulkCopyType.Default ? SqlCeTools.DefaultBulkCopyType : options.BulkCopyType,
-				dataConnection,
+				table,
 				options,
 				source);
 		}
