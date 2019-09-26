@@ -60,8 +60,8 @@
 		<file src="Readme.txt"         />
 		<file src="..\MIT-LICENSE.txt" />
 
-		<file src="..\Source\LinqToDB\bin\Release\**\linq2db.pdb" target="lib\" />
-		<file src="..\Source\LinqToDB\bin\Release\**\linq2db.xml" target="lib\" />
-		<file src="..\Source\LinqToDB\bin\Release\**\linq2db.dll" target="lib\" />
+		<file src="..\Source\LinqToDB\bin\$configuration$\**\linq2db.pdb" target="lib\" />
+		<file src="..\Source\LinqToDB\bin\$configuration$\**\linq2db.xml" target="lib\" />
+		<file src="..\Source\LinqToDB\bin\$configuration$\**\linq2db.dll" target="lib\" />
 	</files>
 </package>
